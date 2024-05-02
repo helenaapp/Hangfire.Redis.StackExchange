@@ -538,7 +538,7 @@ namespace Hangfire.Redis.StackExchange
             }
 
             var keys = dates.Select(x => _storage.GetRedisKey($"stats:{type}:{x:yyyy-MM-dd-HH}")).ToArray();
-            var valuesMap = redis.GetValuesMap(keys);
+            var valuesMap = redis.GetValuesMap(keys, _storage.UseTransactions);
 
             var result = new Dictionary<DateTime, long>();
             for (var i = 0; i < dates.Count; i++)
@@ -570,8 +570,8 @@ namespace Hangfire.Redis.StackExchange
             }
             
             var keys = dates.Select(x => _storage.GetRedisKey($"stats:{type}:{x:yyyy-MM-dd}")).ToArray();
-
-            var valuesMap = redis.GetValuesMap(keys);
+            
+            var valuesMap = redis.GetValuesMap(keys, _storage.UseTransactions);
 
             var result = new Dictionary<DateTime, long>();
             for (var i = 0; i < dates.Count; i++)

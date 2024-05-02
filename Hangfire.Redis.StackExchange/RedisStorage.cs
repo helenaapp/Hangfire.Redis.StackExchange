@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Hangfire.Annotations;
 using Hangfire.Dashboard;
 using Hangfire.Logging;
@@ -174,6 +175,21 @@ namespace Hangfire.Redis.StackExchange
             if (key == null) throw new ArgumentNullException(nameof(key));
 
             return _options.Prefix + key;
+        }
+
+        public async Task<RedisValue> ListRightPopLeftPush(string sourceKey, string destinationKey)
+        {
+            var transaction = _connectionMultiplexer.GetDatabase(Db).CreateTransaction();
+
+            transaction.AddCondition(Condition.KeyExists(sourceKey));
+            var poppedValue = await transaction.ListRightPopAsync(sourceKey);
+
+            _ = await transaction.ListLeftPushAsync(destinationKey, poppedValue);
+
+            while (!await transaction.ExecuteAsync())
+                await Task.Delay(100);
+            
+            return poppedValue;
         }
     }
 }

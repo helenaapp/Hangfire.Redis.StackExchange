@@ -17,6 +17,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using StackExchange.Redis;
 
 namespace Hangfire.Redis.StackExchange
@@ -50,16 +51,39 @@ namespace Hangfire.Redis.StackExchange
 		//		dictionary[entry.Name] = entry.Value;
 		//	return dictionary;
 		//}
-		
-        public static Dictionary<string, string> GetValuesMap(this IDatabase redis, string[] keys)
+
+		public static Dictionary<string, string> GetValuesMap(this IDatabase redis, string[] keys, bool useTransactions)
 		{
-			var redisKeyArr = keys.Select(x => (RedisKey)x).ToArray();
-			var valuesArr = redis.StringGet(redisKeyArr);
-			Dictionary<string, string> result = new Dictionary<string, string>(valuesArr.Length);
-			for (int i = 0; i < valuesArr.Length; i++)
+			Dictionary<string, string> result;
+			if (useTransactions)
 			{
-				result.Add(redisKeyArr[i], valuesArr[i]);
+				var redisKeyArr = keys.Select(x => (RedisKey)x).ToArray();
+				var valuesArr = redis.StringGet(redisKeyArr);
+				result = new Dictionary<string, string>(valuesArr.Length);
+				for (int i = 0; i < valuesArr.Length; i++)
+				{
+					result.Add(redisKeyArr[i], valuesArr[i]);
+				}
 			}
+			else
+			{
+				result = GetValuesMapAsync(redis, keys).Result;
+			}
+			
+			return result;
+        }
+        
+		public static async Task<Dictionary<string, string>> GetValuesMapAsync(this IDatabase redis, string[] keys)
+		{
+			var tasks = new Dictionary<string, Task<RedisValue>>();
+			for (int i = 0; i < keys.Length; i++)
+				tasks[keys[i]] = redis.StringGetAsync(keys[i]);
+			
+			Dictionary<string, string> result = new Dictionary<string, string>();
+
+			for (int i = 0; i < keys.Length; i++)
+				result.Add(keys[i], await tasks[keys[i]]);
+			
 			return result;
 		}
 

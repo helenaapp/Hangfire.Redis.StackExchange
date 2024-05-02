@@ -210,7 +210,7 @@ namespace Hangfire.Redis.StackExchange
                     queueName = queues[i];
                     var queueKey = _storage.GetRedisKey($"queue:{queueName}");
                     var fetchedKey = _storage.GetRedisKey($"queue:{queueName}:dequeued");
-                    jobId = Redis.ListRightPopLeftPush(queueKey, fetchedKey);
+                    jobId = _storage.ListRightPopLeftPush(queueKey, fetchedKey).Result;
                     if (jobId != null) break;
                 }
 
@@ -434,12 +434,8 @@ namespace Hangfire.Redis.StackExchange
             else
             {
                 _ = Redis.SetRemoveAsync(_storage.GetRedisKey("servers"), serverId);
-                _ = Redis.KeyDeleteAsync(
-                    new RedisKey[]
-                    {
-                        _storage.GetRedisKey($"server:{serverId}"),
-                        _storage.GetRedisKey($"server:{serverId}:queues")
-                    });
+                _ = Redis.KeyDeleteAsync(_storage.GetRedisKey($"server:{serverId}"));
+                _ = Redis.KeyDeleteAsync(_storage.GetRedisKey($"server:{serverId}:queues"));
             }
         }
 
