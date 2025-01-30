@@ -120,7 +120,7 @@ namespace Hangfire.Redis.StackExchange
             }
             while (DateTime.UtcNow < lockExpirationTime);
 
-            throw new DistributedLockTimeoutException($"Failed to acquire lock on {key} within given timeout ({timeOut})");
+            throw new DistributedLockTimeoutException(key);
         }
 
         private static void SleepBackOffMultiplier(int i, int maxWait)
